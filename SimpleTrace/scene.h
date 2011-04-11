@@ -1,5 +1,6 @@
 #include "SDL/SDL.h"
 #include <array>
+#include <omp.h>
 #include "volume.h"
 
 #define HAGE_NO_MEMORY_ALLOC_REPLACEMENT
@@ -8,7 +9,7 @@
 class Scene
 {
 public:
-	Scene()
+	Scene() :_nThreads(1)
 	{
 		
 		SDL_Init(SDL_INIT_VIDEO);
@@ -73,8 +74,13 @@ public:
 						return false;
 					if(_event.key.keysym.sym == SDLK_a)
 						volume->AdjustLevel(-0.05f);
-					if(_event.key.keysym.sym == SDLK_d)
+					else if(_event.key.keysym.sym == SDLK_d)
 						volume->AdjustLevel(0.05f);
+					else if(_event.key.keysym.sym == SDLK_q)
+						_nThreads = (_nThreads-2)%8+1;
+					else if(_event.key.keysym.sym == SDLK_e)
+						_nThreads = (_nThreads)%8+1;
+					printf("nThreads: %i\n",_nThreads);
 				}
 				break;
 			}
@@ -89,7 +95,7 @@ public:
 
 		_nextRay=0;
 
-		#pragma omp parallel private(j)
+		#pragma omp parallel private(j) num_threads (_nThreads)
 		{
 			while( (j = GetNextJob()) != nullptr)
 			{
@@ -145,6 +151,7 @@ private:
 	const static int yScreen = 480;
 	
 	int									_nextRay;
+	u32									_nThreads;
 	std::array<Color,xScreen*yScreen>	_screenBuffer;
 	std::array<Job,xScreen*yScreen>		_raySource;
 
